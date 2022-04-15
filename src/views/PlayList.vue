@@ -9,7 +9,7 @@
 <script lang='ts'>
 import { reactive } from "@vue/reactivity";
 import { useRoute } from "vue-router";
-import getAxios from "../hook/get-axios";
+import { getPlayList } from "@/api/index";
 import PlayListTop from "../components/playlist/PlayListTop.vue";
 import PlayListPanel from "../components/playlist/PlayListPanel.vue";
 import { onBeforeMount } from "@vue/runtime-core";
@@ -23,11 +23,9 @@ export default {
       },
     });
     onBeforeMount(async () => {
-      await getAxios()
-        .get("/playlist/detail?id=" + route.params.id)
-        .then((res) => {
-          musicData.playlist = res.data.playlist;
-        });
+      await getPlayList(<string>route.params.id).then((data) => {
+        musicData.playlist = data.playlist;
+      });
     });
     return {
       musicData,

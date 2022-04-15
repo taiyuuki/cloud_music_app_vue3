@@ -53,7 +53,7 @@
 import { Options, Vue } from "vue-class-component";
 import { useRouter } from "vue-router";
 import Icon from "../Icon.vue";
-import getPlayCount from "../../hook/get-count";
+import getPlayCount from "@/api/parse-count";
 
 class Props {
   musicInfo?: Object;

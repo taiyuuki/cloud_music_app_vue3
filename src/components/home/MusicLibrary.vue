@@ -30,24 +30,23 @@ import { Swiper, SwiperSlide } from "swiper/vue";
 import { Pagination, A11y } from "swiper";
 import "swiper/css";
 import "swiper/css/pagination";
-import getAxios from "../hook/get-axios";
+import { getPersonalized } from "@/api/index";
+
 import { reactive } from "vue";
 import { useRouter } from "vue-router";
-import getPlayCount from "../hook/get-count";
+import getPlayCount from "@/api/parse-count";
 export default {
   name: "music-list",
   components: { Swiper, SwiperSlide },
   setup() {
     let musicList = reactive([]);
-    getAxios()
-      .get("/personalized?limit=10")
-      .then((res) => {
-        res.data.result.forEach((item: never) => {
-          musicList.push(item);
-        });
-      });
-
     let router = useRouter();
+    getPersonalized(10).then((data) => {
+      data.result.forEach((item: never) => {
+        musicList.push(item);
+      });
+    });
+
     function toggleToMusicList(id: number) {
       router.push({
         name: "playlist",
@@ -79,7 +78,7 @@ export default {
       font-weight: 900;
     }
     .more {
-      border: 1px solid #ccc;
+      border: 1px solid rgb(100, 100, 100);
       border-radius: 0.2rem;
       font-size: 0.2rem;
       line-height: 0.4rem;
@@ -96,7 +95,6 @@ export default {
       cursor: pointer;
       width: 100%;
       height: 3.2rem;
-      border: 1px solid #fff;
       .play-times {
         position: absolute;
         right: 0.2rem;

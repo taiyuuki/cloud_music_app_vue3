@@ -17,7 +17,7 @@ import { Pagination, A11y } from "swiper";
 import { Swiper, SwiperSlide } from "swiper/vue";
 import "swiper/css";
 import "swiper/css/pagination";
-import getAxios from "../hook/get-axios";
+import { getBanner } from "@/api/index";
 
 // Import Swiper styles
 export default {
@@ -28,13 +28,11 @@ export default {
   setup() {
     let imgArr = reactive([]);
     onMounted(() => {
-      getAxios()
-        .get("/banner?type=1")
-        .then((res) => {
-          res.data.banners.forEach((item: never) => {
-            imgArr.push(item);
-          });
+      getBanner(1).then((data) => {
+        data.banners.forEach((item: never) => {
+          imgArr.push(item);
         });
+      });
     });
     return {
       modules: [Pagination, A11y],

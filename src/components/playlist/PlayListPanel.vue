@@ -36,24 +36,8 @@
 import Icon from "../Icon.vue";
 import { mapState, useStore } from "vuex";
 import { reactive } from "@vue/runtime-core";
+import Music from "@/api/music";
 
-class Music {
-  id: number | string;
-  title: string;
-  singer: string;
-  picUrl: string;
-  constructor(
-    id: number | string,
-    title: string,
-    singer: string,
-    picUrl: string
-  ) {
-    this.id = id;
-    this.title = title;
-    this.singer = singer;
-    this.picUrl = picUrl;
-  }
-}
 export default {
   name: "play-list-panel",
   props: ["musicInfo"],
@@ -68,8 +52,8 @@ export default {
         item.ar[0].name,
         item.al.picUrl
       );
-      $store.commit("addMusicToPlayList", music);
-      $store.dispatch("switchPlaying", music);
+      $store.dispatch("isPlaying", music);
+      console.log(music.picUrl);
     }
     return {
       playMisic,

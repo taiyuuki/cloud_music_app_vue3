@@ -3,6 +3,9 @@
     v-show="isFull"
     :audioData="audioData"
     @back="isFull = !isFull"
+    @playPauseAudio="playPauseAudio"
+    @jump="jump"
+    @move="move"
   />
   <audio
     :src="audioData.audiourl"
@@ -12,22 +15,17 @@
     @ended="audioEnded"
     @timeupdate="audioTimeupdate"
     @loadeddata="audioLoadeddata"
+    @canplay="audioCanplay"
   ></audio>
   <div class="music-playing-control" v-show="!isFull">
     <div class="cover" :style="ani" @click="switchToFullsreen">
       <img :src="audioData.picUrl" />
     </div>
     <div class="title">
-      <!-- <marquee
-        behavior="alternate"
-        direction="left"
-        loop
-        scrollamount="1"
-        scrolldelay="20"
-      >
-        {{ audioData.title }} - {{ audioData.singer }}
-      </marquee> -->
-      <div class="marquee">{{ audioData.title }} {{ audioData.singer }}</div>
+      <div class="marquee">
+        {{ audioData.title }} <span v-if="audioData.title">-</span>
+        {{ audioData.singer }}
+      </div>
     </div>
     <div class="playing-btn" @click="playPauseAudio">
       <Icon v-show="!audioData.playing" xurl="#icon-bofang" />
@@ -40,20 +38,25 @@
 </template>
 
 <script lang="ts">
-import Icon from "./Icon.vue";
-import FullscreenPlaying from "./FullscreenPlaying.vue";
+import Icon from "../Icon.vue";
+import FullscreenPlaying from "../playbar/FullscreenPlaying.vue";
 import { useStore } from "vuex";
 import { reactive, ref } from "@vue/reactivity";
 import { watch } from "@vue/runtime-core";
+import { getLrc } from "@/api/index";
 
 export default {
   name: "play-music",
   components: { Icon, FullscreenPlaying },
   setup() {
+    const COVER_ANI = "animation:coverSpin 10s linear infinite";
     let $store = reactive(useStore());
     let $audio: HTMLAudioElement | null = null;
-    let ani = ref(`animation:coverSpin 10s linear infinite`); // 封面旋转动画
+    let ani = ref(COVER_ANI); // 封面旋转动画
     let isFull = ref(false); // 是否全屏播放
+    let isAuto = true; // 是否自动切换歌曲
+    let isJump = false; // 是否正在跳转进度条
+    let isMove = false; // 是否正在拉动进度条
     const audioData = reactive({
       id: 0,
       audiourl: "",
@@ -63,11 +66,14 @@ export default {
       singer: "", // 歌手
       duration: 0, // 音频总时长
       currentTime: 0, // 当前播放的位置
+      currentIndex: 0, // 当前歌词
+      trans: 2,
+      layric: [] as any[], //歌词
     });
 
     // 监视切歌
     watch(
-      $store,
+      () => $store.state.playCurrentMusic,
       () => {
         audioData.id = $store.state.playCurrentMusic.id;
         audioData.audiourl = `https://music.163.com/song/media/outer/url?id=${$store.state.playCurrentMusic.id}`;
@@ -75,9 +81,8 @@ export default {
         audioData.picUrl = $store.state.playCurrentMusic.picUrl;
         audioData.title = $store.state.playCurrentMusic.title;
         audioData.singer = $store.state.playCurrentMusic.singer;
-        if (audioData.playing) {
-          ani.value = `animation:coverSpin 10s linear infinite`;
-        }
+        audioData.currentIndex = 0;
+        audioData.trans = 0;
       },
       { immediate: true }
     );
@@ -86,22 +91,65 @@ export default {
      * 以下是对音频的操作
      */
 
+    // 转换时间格式
+    const transTime = (time: number): string => {
+      const addZero = (n: number): string => {
+        if (n < 10) {
+          return "0" + n;
+        } else {
+          return "" + n;
+        }
+      };
+      let secend = Math.floor(time);
+      let minute = Math.floor(secend / 60);
+      return addZero(minute) + ":" + addZero(secend - minute * 60);
+    };
+
     // 音频播放结束
     const audioEnded = () => {
       audioData.playing = false;
       ani.value = "";
+      audioData.currentTime = 0;
+      audioData.currentIndex = 0;
+      audioData.trans = 0;
+      if (isAuto) {
+        $store.dispatch("isPlaying");
+        audioPlay();
+        ani.value = COVER_ANI;
+      }
     };
 
     // 播放进度：表示正在播放，currentTime在更新
     const audioTimeupdate = (e: any) => {
       audioData.currentTime = e.target.currentTime;
-      //处理
+      for (let i = 0; i < audioData.layric.length; i++) {
+        if (
+          audioData.layric[i].start < audioData.currentTime &&
+          audioData.layric[i].end > audioData.currentTime
+        ) {
+          if (audioData.currentIndex !== i) {
+            audioData.currentIndex = i;
+            if (audioData.layric[audioData.currentIndex].start && !isJump) {
+              audioData.trans =
+                audioData.layric[audioData.currentIndex].end -
+                audioData.layric[audioData.currentIndex].start;
+            }
+          }
+          break;
+        }
+      }
+      if (!isMove) {
+        $store.state.musicCurrentTime = transTime(audioData.currentTime);
+        $store.state.musicProgress =
+          (audioData.currentTime * 100) / audioData.duration;
+      }
     };
 
     // 当媒体音频第一帧加载完成时
     const audioLoadeddata = (e: any) => {
       $audio = e.target;
       audioData.duration = e.target.duration;
+      $store.state.musicDuration = transTime(audioData.duration);
     };
 
     // 播放
@@ -121,19 +169,72 @@ export default {
     }
     // 播放或暂停音频
     const playPauseAudio = () => {
+      isAuto = false;
       if (!audioData.playing) {
         audioPlay();
         ani.value = `animation:coverSpin 10s linear infinite`;
       } else {
         audioPause();
-        ani.value = "";
+        ani.value =
+          "animation:coverSpin 10s linear infinite;animation-play-state: paused";
       }
       $store.commit("playPause", audioData.playing);
+      isAuto = true;
     };
 
     // 全屏
     const switchToFullsreen = () => {
       isFull.value = true;
+    };
+
+    const getTimeStamp = (time: string): number => {
+      let result =
+        parseInt(time.slice(0, time.lastIndexOf(":"))) * 60 +
+        parseFloat(time.slice(time.lastIndexOf(":") + 1));
+      return result;
+    };
+
+    // 获取歌词
+    const audioCanplay = () => {
+      getLrc(audioData.id).then((data) => {
+        audioData.layric = data.lrc.lyric.split(/\n/g).map((item: any) => {
+          let sliceIndex = item.lastIndexOf("]");
+          return {
+            start: getTimeStamp(item.slice(1, sliceIndex)),
+            lrc: item.slice(sliceIndex + 1) || "<br/>",
+          };
+        });
+        for (let i = 0; i < audioData.layric.length; i++) {
+          if (audioData.layric[i + 1].start) {
+            audioData.layric[i].end = audioData.layric[i + 1].start;
+          } else {
+            audioData.layric[i].end = audioData.duration;
+            break;
+          }
+        }
+      });
+    };
+
+    // 进度条跳转
+    const jump = (p: number) => {
+      isJump = true;
+      if ($audio) {
+        $audio.currentTime = p;
+      }
+      audioData.trans = 0;
+      setTimeout(() => {
+        isJump = false;
+      }, 200);
+      isMove = false;
+      window.onmousemove = null;
+      window.onmouseup = null;
+    };
+
+    // 拉进度条
+    const move = (p: number) => {
+      isMove = true;
+      $store.state.musicProgress = (p * 100) / audioData.duration;
+      $store.state.musicCurrentTime = transTime(p);
     };
 
     return {
@@ -144,7 +245,10 @@ export default {
       audioLoadeddata,
       playPauseAudio,
       ani,
+      jump,
+      move,
       switchToFullsreen,
+      audioCanplay,
     };
   },
 };
@@ -171,7 +275,7 @@ export default {
 
 .music-playing-control {
   position: absolute;
-  bottom: 0;
+  bottom: 1.4rem;
   left: 0.2rem;
   width: 7.1rem;
   height: 1rem;

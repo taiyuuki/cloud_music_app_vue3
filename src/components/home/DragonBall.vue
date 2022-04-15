@@ -16,18 +16,16 @@
 
 <script lang='ts'>
 import { reactive } from "@vue/reactivity";
-import getAxios from "../hook/get-axios";
+import { getDragonBall } from "@/api/index";
 export default {
   name: "icon-list",
   setup() {
     let ballList = reactive([]);
-    getAxios()
-      .get("/homepage/dragon/ball")
-      .then((res) => {
-        res.data.data.forEach((item: never) => {
-          ballList.push(item);
-        });
+    getDragonBall().then((data) => {
+      data.data.forEach((item: never) => {
+        ballList.push(item);
       });
+    });
     function toggleToList(name: string) {
       console.log(name);
     }

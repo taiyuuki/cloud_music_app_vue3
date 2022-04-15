@@ -2,15 +2,18 @@
   <div class="">
     <router-view />
     <PlayMusic />
+    <ButtomMenu />
   </div>
 </template>
 
 <script lang="ts">
-import PlayMusic from "./components/PlayMusic.vue";
-import $store from "./store/index";
+import PlayMusic from "@/components/app/PlayMusic.vue";
+import $store from "@/store/index";
+import ButtomMenu from "@/components/app/ButtomMenu.vue";
+
 export default {
   name: "app",
-  components: { PlayMusic },
+  components: { PlayMusic, ButtomMenu },
   $store,
 };
 </script>
@@ -20,6 +23,10 @@ export default {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+
+body {
+  background-color: rgb(245, 245, 245);
 }
 .app {
   position: fixed;
