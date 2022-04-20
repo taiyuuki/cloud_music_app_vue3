@@ -1,4 +1,8 @@
 import { createStore } from 'vuex'
+import { removeLS } from "@/api/storage";
+
+const USER_INFO = "userinfo";
+const COOKIE = "cookie";
 
 export default createStore({
   state: {
@@ -50,8 +54,18 @@ export default createStore({
       state.isPlaying = isPlaying;
     },
 
-    // 切歌
+    // 切歌（点击播放列表）
+    switchCurrentMusic(state: any, index: number) {
+      state.playIndex = index;
+      state.playCurrentMusic = state.musicPlayingList[state.playIndex];
+      state.isPlaying = true;
+    },
+
+    // 切歌（上一曲、下一曲）
     switchMusic(state: any, i: number) {
+      if (!state.musicPlayingList.length) {
+        return;
+      }
       // 随机
       const getRandom = (size: number): number => {
         let result = Math.floor(Math.random() * size);
@@ -71,11 +85,25 @@ export default createStore({
           state.playIndex = state.musicPlayingList.length - 1;
         }
       }
-      state.playCurrentMusic = state.musicPlayingList[state.playIndex]
+      state.playCurrentMusic = state.musicPlayingList[state.playIndex];
+      state.isPlaying = true;
     },
     // 切换播放模式
     switchPlayingType(state: any, i: number) {
       state.playingType += i;
+    },
+
+    // 从播放列表移除歌曲
+    removeCurrentMusic(state: any, index: number) {
+      state.musicPlayingList.splice(index, 1);
+      if (index < state.playIndex) {
+        state.playIndex--;
+      } else if (index == state.playIndex && state.musicPlayingList.length > 0) {
+        if (index === state.musicPlayingList.length) {
+          state.playIndex = 0;
+        }
+        state.playCurrentMusic = state.musicPlayingList[state.playIndex];
+      }
     },
 
     // 登录
@@ -96,6 +124,8 @@ export default createStore({
     // 登出
     logout(state: any) {
       state.user.isLogin = false;
+      removeLS(USER_INFO);
+      removeLS(COOKIE);
     }
   },
   actions: {
@@ -105,7 +135,7 @@ export default createStore({
       }
       if (music) {
         this.commit("addMusicToPlayList", music)
-      } else if (context.state.playingType !== 1) {
+      } else if (context.state.playingType !== 1 && context.state.musicPlayingList.length > 0) {
         this.commit("switchMusic", 1)
       }
 
@@ -116,6 +146,9 @@ export default createStore({
       } else {
         this.commit("switchPlayingType", 1)
       }
+    },
+    removeCurrentMusic(context: any, index: number) {
+      this.commit("removeCurrentMusic", index);
     }
   },
   modules: {

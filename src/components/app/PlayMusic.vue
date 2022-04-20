@@ -1,12 +1,15 @@
 <template>
-  <FullscreenPlaying
-    v-show="isFull"
-    :audioData="audioData"
-    @back="isFull = !isFull"
-    @playPauseAudio="playPauseAudio"
-    @jump="jump"
-    @move="move"
-  />
+  <transition name="btts" appear>
+    <FullscreenPlaying
+      v-show="isFull"
+      :audioData="audioData"
+      @back="isFull = !isFull"
+      @playPauseAudio="playPauseAudio"
+      @showPlayingList="showPlayingList"
+      @jump="jump"
+      @move="move"
+    />
+  </transition>
   <audio
     :src="audioData.audiourl"
     v-if="audioData.id !== 0"
@@ -31,15 +34,17 @@
       <Icon v-show="!audioData.playing" xurl="#icon-bofang" />
       <Icon v-show="audioData.playing" xurl="#icon-zanting" />
     </div>
-    <div class="playing-list">
+    <div class="playing-list" @click="showPlayingList">
       <Icon xurl="#icon-24gf-playlistMusic5" />
     </div>
   </div>
+  <PlayingList v-show="showList" @hiddenList="hiddenList" />
 </template>
 
 <script lang="ts">
 import Icon from "../Icon.vue";
 import FullscreenPlaying from "../playbar/FullscreenPlaying.vue";
+import PlayingList from "@/components/playbar/PlayingList.vue";
 import { useStore } from "vuex";
 import { reactive, ref } from "@vue/reactivity";
 import { watch } from "@vue/runtime-core";
@@ -47,16 +52,20 @@ import { getLrc } from "@/api/index";
 
 export default {
   name: "play-music",
-  components: { Icon, FullscreenPlaying },
+  components: { Icon, FullscreenPlaying, PlayingList },
   setup() {
     const COVER_ANI = "animation:coverSpin 10s linear infinite";
-    let $store = reactive(useStore());
+    const COVER_ANI_PAUSE =
+      "animation:coverSpin 10s linear infinite;animation-play-state: paused";
+    let $store = useStore();
     let $audio: HTMLAudioElement | null = null;
     let ani = ref(COVER_ANI); // 封面旋转动画
     let isFull = ref(false); // 是否全屏播放
+    let showList = ref(false); // 是否显示播放列表
     let isAuto = true; // 是否自动切换歌曲
     let isJump = false; // 是否正在跳转进度条
     let isMove = false; // 是否正在拉动进度条
+
     const audioData = reactive({
       id: 0,
       audiourl: "",
@@ -71,13 +80,21 @@ export default {
       layric: [] as any[], //歌词
     });
 
+    const showPlayingList = () => {
+      showList.value = true;
+    };
+
+    const hiddenList = () => {
+      showList.value = false;
+    };
+
     // 监视切歌
     watch(
       () => $store.state.playCurrentMusic,
       () => {
         audioData.id = $store.state.playCurrentMusic.id;
         audioData.audiourl = `https://music.163.com/song/media/outer/url?id=${$store.state.playCurrentMusic.id}`;
-        audioData.playing = $store.state.isPlaying;
+        audioData.playing = true;
         audioData.picUrl = $store.state.playCurrentMusic.picUrl;
         audioData.title = $store.state.playCurrentMusic.title;
         audioData.singer = $store.state.playCurrentMusic.singer;
@@ -85,6 +102,17 @@ export default {
         audioData.trans = 0;
       },
       { immediate: true }
+    );
+
+    watch(
+      () => audioData.playing,
+      () => {
+        if (audioData.playing) {
+          ani.value = COVER_ANI;
+        } else {
+          ani.value = COVER_ANI_PAUSE;
+        }
+      }
     );
 
     /**
@@ -115,7 +143,6 @@ export default {
       if (isAuto) {
         $store.dispatch("isPlaying");
         audioPlay();
-        ani.value = COVER_ANI;
       }
     };
 
@@ -157,6 +184,7 @@ export default {
       if ($audio) {
         $audio.play();
         audioData.playing = true;
+        ani.value = COVER_ANI;
       }
     }
 
@@ -165,6 +193,7 @@ export default {
       if ($audio) {
         $audio.pause();
         audioData.playing = false;
+        ani.value = COVER_ANI_PAUSE;
       }
     }
     // 播放或暂停音频
@@ -172,11 +201,8 @@ export default {
       isAuto = false;
       if (!audioData.playing) {
         audioPlay();
-        ani.value = `animation:coverSpin 10s linear infinite`;
       } else {
         audioPause();
-        ani.value =
-          "animation:coverSpin 10s linear infinite;animation-play-state: paused";
       }
       $store.commit("playPause", audioData.playing);
       isAuto = true;
@@ -228,6 +254,8 @@ export default {
       isMove = false;
       window.onmousemove = null;
       window.onmouseup = null;
+      window.ontouchmove = null;
+      window.ontouchend = null;
     };
 
     // 拉进度条
@@ -239,6 +267,7 @@ export default {
 
     return {
       isFull,
+      showList,
       audioData,
       audioEnded,
       audioTimeupdate,
@@ -249,12 +278,29 @@ export default {
       move,
       switchToFullsreen,
       audioCanplay,
+      showPlayingList,
+      hiddenList,
     };
   },
 };
 </script>
 
 <style lang="less">
+@keyframes btt {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.btts-enter-active {
+  animation: btt ease-in 0.2s;
+}
+.btts-leave-active {
+  animation: btt ease-out 0.2s reverse;
+}
+
 @keyframes coverSpin {
   from {
     transform: rotate(0deg);
@@ -284,14 +330,14 @@ export default {
   display: flex;
   .cover {
     position: relative;
-    flex: 1;
     height: 1rem;
+    width: 1rem;
     line-height: 1rem;
     font-size: 0;
     cursor: pointer;
+    border-radius: 50%;
+    overflow: hidden;
     img {
-      border-radius: 50%;
-      overflow: hidden;
       height: 100%;
     }
   }

@@ -63,11 +63,12 @@ import { loginApi } from "@/api/index";
 import { useStore } from "vuex";
 import UserInfo from "@/api/userinfo";
 import { useRouter } from "vue-router";
-import { setLS } from "@/api/storage";
+import { getLS, setLS, removeLS } from "@/api/storage";
 export default {
   name: "email",
   components: { LoginTop, Tip },
   setup() {
+    const COOKIE = "cookie";
     let emailAddress = ref("");
     let password = ref("");
     let showTip = ref(false);
@@ -110,7 +111,10 @@ export default {
               });
               $store.commit("login", userinfo);
               setLS("userinfo", userinfo);
-              setLS("cookie", encodeURIComponent(data.cookie));
+              if (getLS(COOKIE)) {
+                removeLS(COOKIE);
+              }
+              setLS(COOKIE, encodeURIComponent(data.cookie));
               router.push({
                 name: "user",
               });

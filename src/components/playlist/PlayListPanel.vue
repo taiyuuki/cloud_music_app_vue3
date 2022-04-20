@@ -1,5 +1,5 @@
 <template>
-  <div class="play-list-panel">
+  <div class="play-list-panel" @scroll="onScrollAction">
     <div class="list-top">
       <div class="play-all">
         <Icon xurl="#icon-bofang" />
@@ -34,7 +34,7 @@
 
 <script lang="ts">
 import Icon from "../Icon.vue";
-import { mapState, useStore } from "vuex";
+import { useStore } from "vuex";
 import { reactive } from "@vue/runtime-core";
 import Music from "@/api/music";
 
@@ -53,11 +53,14 @@ export default {
         item.al.picUrl
       );
       $store.dispatch("isPlaying", music);
-      console.log(music.picUrl);
     }
+
+    const onScrollAction = (e: any) => {
+      console.log(e.target);
+    };
     return {
       playMisic,
-      ...mapState,
+      onScrollAction,
     };
   },
 };
@@ -67,10 +70,18 @@ export default {
 .play-list-panel {
   margin: 0.2rem 0 0 0;
   width: 7.5rem;
+  height: calc(100vh - 8rem);
   background-color: #fff;
   padding: 0.2rem;
   border-radius: 0.2rem;
   color: #000;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none; /* Chrome Safari */
+  }
   .list-top {
     display: flex;
     justify-content: space-between;
@@ -111,6 +122,7 @@ export default {
       display: flex;
       height: 0.5rem;
       justify-content: space-between;
+      text-overflow: ellipsis;
       margin: 0.2rem;
       .left {
         display: flex;

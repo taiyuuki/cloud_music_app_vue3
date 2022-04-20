@@ -13,7 +13,15 @@ export const getDragonBall = (): Promise<any> => request.get("/homepage/dragon/b
 export const getPersonalized = (n: number | string): Promise<any> => request.get(`/personalized?limit=${n}`)
 
 // 获取歌单列表
-export const getPlayList = (id: number | string): Promise<any> => request.get(`/playlist/detail?id=${id}`)
+export const getPlayList = (id: number | string, cookie?: string, offset?: number | string): Promise<any> => {
+  if (cookie) {
+    if (offset) {
+      return request.get(`/playlist/track/all?id=${id}&limit=20&offset=${offset}&cookie=${cookie}`);
+    }
+    return request.get(`/playlist/detail?id=${id}&cookie=${cookie}`)
+  }
+  return request.get(`/playlist/detail?id=${id}`)
+}
 
 // 获取歌词
 export const getLrc = (id: number | string): Promise<any> => request.get(`/lyric?id=${id}`)

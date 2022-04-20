@@ -1,41 +1,35 @@
 import { createRouter, createWebHashHistory, RouteRecordRaw } from 'vue-router'
-import Home from '@/views/Home.vue'
-import PlayList from '@/views/PlayList.vue'
-import SearchMusic from '@/views/SearchMusic.vue'
-import Login from "@/views/Login.vue"
-import User from "@/views/User.vue"
-import Email from "@/components/login/Email.vue"
 
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
     name: 'home',
-    component: Home
+    component: () => require("@/views/Home.vue").default
   },
   {
     path: '/playlist',
     name: 'playlist',
-    component: PlayList
+    component: () => require("@/views/PlayList.vue").default
   },
   {
     path: '/search',
     name: 'search',
-    component: SearchMusic
+    component: () => require("@/views/SearchMusic.vue").default
   },
   {
     path: '/user',
     name: 'user',
-    component: User
+    component: () => require("@/views/User.vue").default
   },
   {
     path: '/login',
     name: 'login',
-    component: Login
+    component: () => require("@/views/Login.vue").default
   },
   {
     path: '/email',
     name: 'email',
-    component: Email
+    component: () => require("@/components/login/Email.vue").default
   },
 ]
 

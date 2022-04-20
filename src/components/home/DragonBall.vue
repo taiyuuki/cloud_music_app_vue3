@@ -48,7 +48,7 @@ export default {
   overflow-y: hidden;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  ::-webkit-scrollbar {
+  &::-webkit-scrollbar {
     display: none; /* Chrome Safari */
   }
   .item {

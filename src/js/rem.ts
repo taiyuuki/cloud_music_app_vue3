@@ -1,13 +1,13 @@
 // 初始化rem设置
 function initRem() {
-  let screenWith = document.documentElement.clientWidth;
-  if (screenWith >= 750) {
-    screenWith = 750
+  let screenWidth = document.documentElement.clientWidth;
+  if (screenWidth >= 750) {
+    screenWidth = 750
   }
-  if (screenWith <= 320) {
-    screenWith = 320
+  if (screenWidth <= 320) {
+    screenWidth = 320
   }
-  document.documentElement.style.fontSize = (screenWith / 7.5) + 'px'
+  document.documentElement.style.fontSize = (screenWidth / 7.5) + 'px'
   document.body.style.fontSize = "0.16rem"
 }
 initRem()

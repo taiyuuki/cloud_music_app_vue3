@@ -3,7 +3,7 @@
     <div class="bg" :style="`background-image:url(${audioData.picUrl})`"></div>
     <div class="playing-top">
       <div class="return" @click="back">
-        <Icon xurl="#icon-arrow-left-full" />
+        <Icon xurl="#icon-xiajiantou" />
       </div>
       <div class="title">
         <div class="marquee">
@@ -63,7 +63,7 @@
           />
           <Icon
             v-show="store.state.playingType === 2"
-            xurl="#icon-suijibofang"
+            xurl="#icon-24gl-shuffle"
           />
         </div>
         <div class="pre-music" @click="switchMusic(-1)">
@@ -76,7 +76,7 @@
         <div class="next-music" @click="switchMusic(1)">
           <Icon xurl="#icon-xiayiqu" />
         </div>
-        <div class="playing-music-list">
+        <div class="playing-music-list" @click.stop="showPlayingList">
           <Icon xurl="#icon-24gf-playlistMusic5" />
         </div>
       </div>
@@ -85,7 +85,7 @@
 </template>
 
 <script lang="ts">
-import { ref, watch } from "@vue/runtime-core";
+import { onMounted, onUpdated, ref } from "@vue/runtime-core";
 import Icon from "../Icon.vue";
 import Slider from "./Slider.vue";
 import { useStore } from "vuex";
@@ -95,7 +95,7 @@ export default {
   name: "fullscreen-playing",
   components: { Icon, Slider },
   props: ["audioData"],
-  emits: ["back", "playPauseAudio", "jump", "move"],
+  emits: ["back", "playPauseAudio", "jump", "move", "showPlayingList"],
   setup(props: any, context: any) {
     let store = reactive(Object.create(null));
     let coverMode = ref(true); // 显示模式：是否显示封面
@@ -145,24 +145,36 @@ export default {
       context.emit("move", progress);
     };
 
-    // 监视播放状态 播放、暂停唱片旋转动画
-    watch(
-      () => props.audioData.playing,
-      () => {
-        if (props.audioData.playing) {
-          ani.value = `animation:coverSpin 10s linear infinite`;
-          deg.value = "transform: rotate(-5deg)";
-        } else {
-          ani.value =
-            "animation:coverSpin 10s linear infinite;animation-play-state: paused";
-          deg.value = "transform: rotate(-35deg)";
-        }
+    // 播放、暂停唱片旋转动画
+    const coverAnimation = (): void => {
+      if (props.audioData.playing) {
+        ani.value = `animation:coverSpin 10s linear infinite`;
+        deg.value = "transform: rotate(-5deg)";
+      } else {
+        ani.value =
+          "animation:coverSpin 10s linear infinite;animation-play-state: paused";
+        deg.value = "transform: rotate(-35deg)";
       }
-    );
+    };
+
+    // 加载动画
+    onMounted(() => {
+      coverAnimation();
+    });
+
+    // 更新动画
+    onUpdated(() => {
+      coverAnimation();
+    });
 
     // 播放、暂停
     const playPauseAudio = () => {
       context.emit("playPauseAudio");
+    };
+
+    // 显示播放列表
+    const showPlayingList = () => {
+      context.emit("showPlayingList");
     };
 
     return {
@@ -179,6 +191,7 @@ export default {
       show,
       switchShowMode,
       coverMode,
+      showPlayingList,
     };
   },
 };
@@ -313,15 +326,16 @@ export default {
         transform: translateY(1.25rem);
       }
       .lrc-all {
-        font-family: "Courier New", Courier, monospace;
+        font-family: "微软雅黑", "heiti", "ht", "黑体";
         white-space: nowrap;
         color: rgb(211, 211, 211);
         text-shadow: 0px 0px 3px rgb(0, 0, 0);
         transition: 0.8s ease-in;
+        font-weight: bold;
       }
       .lrc-show {
         color: #fff;
-        text-shadow: 0px 0px 3px rgb(60, 60, 60);
+        text-shadow: 0px 0px 3px rgb(0, 0, 0);
         transition: 0.8s ease-out;
       }
     }

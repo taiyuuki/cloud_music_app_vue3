@@ -1,7 +1,12 @@
 <template>
   <div class="slider">
     <div class="current-time">{{ store.state.musicCurrentTime }}</div>
-    <div class="slider-bar" @click.stop="jump" @mousedown.stop="moveSlider">
+    <div
+      class="slider-bar"
+      @click.stop="jump"
+      @mousedown.stop="moveSlider"
+      @touchstart="moveSlider"
+    >
       <div class="slider-back"></div>
       <div
         class="slider-forword"
@@ -110,7 +115,7 @@ export default {
         let item = downEvent.target;
         let width = parseFloat(item.parentNode.clientWidth); // 获取进度条宽度
         let left = (parseFloat(item.style.left) / 100) * width; // 计算进度
-        let from = downEvent.pageX; // 当前进度条相对于页面的位置
+        let from = downEvent.pageX || downEvent.changedTouches[0].screenX; // 当前进度条相对于页面的位置
         let to = left; // 目标位置
         window.onmousemove = (moveEvent: any) => {
           to = (left + moveEvent.pageX - from) / width;
@@ -122,10 +127,21 @@ export default {
           }
           context.emit("move", to);
         };
-        window.onmouseup = () => {
-          if (window.onmousemove) {
-            context.emit("jump", to);
+        window.ontouchmove = (moveEvent) => {
+          to = (left + moveEvent.changedTouches[0].screenX - from) / width;
+          if (to > 1) {
+            to = 1;
           }
+          if (to < 0) {
+            to = 0;
+          }
+          context.emit("move", to);
+        };
+        window.onmouseup = () => {
+          context.emit("jump", to);
+        };
+        window.ontouchend = () => {
+          context.emit("jump", to);
         };
       }
     };

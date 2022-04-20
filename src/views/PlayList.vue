@@ -8,14 +8,16 @@
 
 <script lang='ts'>
 import { reactive } from "@vue/reactivity";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { getPlayList } from "@/api/index";
-import PlayListTop from "../components/playlist/PlayListTop.vue";
-import PlayListPanel from "../components/playlist/PlayListPanel.vue";
+import PlayListTop from "@/components/playlist/PlayListTop.vue";
+import PlayListPanel from "@/components/playlist/PlayListPanel.vue";
 import { onBeforeMount } from "@vue/runtime-core";
+import { getLS } from "@/api/storage";
 export default {
   components: { PlayListTop, PlayListPanel },
   setup() {
+    const COOKIE = "cookie";
     let route = useRoute();
     let musicData = reactive({
       playlist: {
@@ -23,9 +25,24 @@ export default {
       },
     });
     onBeforeMount(async () => {
-      await getPlayList(<string>route.params.id).then((data) => {
-        musicData.playlist = data.playlist;
-      });
+      if (getLS(COOKIE)) {
+        await getPlayList(<string>route.params.id, getLS(COOKIE)).then(
+          (data) => {
+            // musicData.playlist = data.songs;
+            musicData.playlist = data.playlist;
+            // console.log(data.songs);
+          }
+        );
+      } else {
+        await getPlayList(<string>route.params.id).then(
+          (data) => {
+            musicData.playlist = data.playlist;
+          },
+          () => {
+            useRouter().push("/login");
+          }
+        );
+      }
     });
     return {
       musicData,
